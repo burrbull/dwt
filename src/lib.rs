@@ -4,18 +4,14 @@
 
 // The implementation is based on:
 // http://www.gnu.org/software/gsl/manual/html_node/Wavelet-Transforms.html
+#![cfg_attr(not(feature = "std"), no_std)]
+#![allow(clippy::new_ret_no_self)]
 
-extern crate num_traits as num;
-
-use num::Float;
+use num_traits::{float::FloatCore, NumAssign};
 
 mod transform;
 
 pub mod wavelet;
-
-use wavelet::Wavelet;
-
-pub use transform::Transform;
 
 /// A transform operation.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -30,8 +26,14 @@ pub enum Operation {
 ///
 /// The function is a shortcut for `Transform::transform`.
 #[inline(always)]
-pub fn transform<T>(data: &mut [T], operation: Operation, wavelet: &Wavelet<T>, level: usize)
-    where T: Float
+#[cfg(feature = "std")]
+pub fn transform<T, const L: usize>(
+    data: &mut [T],
+    operation: Operation,
+    wavelet: &wavelet::Wavelet<T, L>,
+    level: usize,
+) where
+    T: FloatCore + NumAssign,
 {
-    Transform::transform(data, operation, wavelet, level);
+    wavelet.transform(data, operation, level);
 }

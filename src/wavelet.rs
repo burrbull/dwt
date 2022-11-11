@@ -1,23 +1,24 @@
 //! Wavelets.
 
-use num::{Float, FloatConst};
+use num_traits::float::{FloatConst, FloatCore};
 
 /// A wavelet.
-pub struct Wavelet<T> {
-    /// The number of coefficients.
-    pub length: usize,
+///
+/// `T` - float type.
+/// `L` - the number of coefficients.
+pub struct Wavelet<T, const L: usize> {
     /// The offset of the coefficients.
     pub offset: usize,
 
     /// The coefficients of the decomposition low-pass filter.
-    pub dec_lo: Vec<T>,
+    pub dec_lo: [T; L],
     /// The coefficients of the decomposition high-pass filter.
-    pub dec_hi: Vec<T>,
+    pub dec_hi: [T; L],
 
     /// The coefficients of the reconstruction low-pass filter.
-    pub rec_lo: Vec<T>,
+    pub rec_lo: [T; L],
     /// The coefficients of the reconstruction high-pass filter.
-    pub rec_hi: Vec<T>,
+    pub rec_hi: [T; L],
 }
 
 /// A Haar wavelet.
@@ -25,15 +26,17 @@ pub struct Haar;
 
 impl Haar {
     /// Create a wavelet.
-    pub fn new<T>() -> Wavelet<T> where T: Float + FloatConst {
+    pub fn new<T>() -> Wavelet<T, 2>
+    where
+        T: FloatCore + FloatConst,
+    {
         let value = T::FRAC_1_SQRT_2();
         Wavelet {
-            length: 2,
             offset: 0,
-            dec_lo: vec![value,  value],
-            dec_hi: vec![value, -value],
-            rec_lo: vec![value,  value],
-            rec_hi: vec![value, -value],
+            dec_lo: [value, value],
+            dec_hi: [value, -value],
+            rec_lo: [value, value],
+            rec_hi: [value, -value],
         }
     }
 }

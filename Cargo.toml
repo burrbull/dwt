@@ -9,9 +9,14 @@ homepage = "https://github.com/stainless-steel/dwt"
 repository = "https://github.com/stainless-steel/dwt"
 categories = ["algorithms", "science"]
 keywords = ["wavelet", "transform"]
+edition = "2021"
 
 [dependencies]
-num-traits = { version = "0.1.35", default-features = false }
+num-traits = { version = "0.2.15", default-features = false }
 
 [dev-dependencies]
 assert = "0.7"
+
+[features]
+default = ["std"]
+std = []
