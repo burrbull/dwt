@@ -81,6 +81,7 @@ where
     where
         T: FloatCore,
     {
+        zero!(work);
         let nm = L * n - self.offset;
         let nh = n >> 1;
         for i in 0..nh {
