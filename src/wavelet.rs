@@ -88,6 +88,16 @@ macro_rules! ortho {
                 pub fn new() -> Wavelet<f64, $L> {
                     Self::with_offset(0)
                 }
+
+                pub fn with_offset_f32(offset: usize) -> Wavelet<f32, $L> {
+                    Wavelet::new_orthogonal(
+                        $cnst.map(|b| f64::from_bits(b) as f32).as_slice(),
+                        offset,
+                    )
+                }
+                pub fn new_f32() -> Wavelet<f32, $L> {
+                    Self::with_offset_f32(0)
+                }
             }
         )*
     };
