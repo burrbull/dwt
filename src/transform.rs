@@ -1,7 +1,8 @@
-use num_traits::{float::FloatCore, NumAssign};
+use num_traits::{NumAssign, Zero};
 
 use crate::wavelet::Wavelet;
 
+#[cfg(feature = "std")]
 macro_rules! copy(
     ($source:ident, $destination:ident, $n:expr) => ({
         use core::ptr::copy_nonoverlapping as copy;
@@ -18,7 +19,7 @@ macro_rules! zero(
 
 impl<T, const L: usize> Wavelet<T, L>
 where
-    T: FloatCore + NumAssign,
+    T: Zero + NumAssign + Copy,
 {
     /// Perform the transform.
     ///
@@ -42,14 +43,16 @@ where
             Operation::Forward => {
                 for i in 0..level {
                     let n = n >> i;
-                    self.forward_step(data, n, &mut work);
+                    let (approx, detail) = work.split_at_mut(n >> 1);
+                    self.forward_step(data, n, Some(approx), Some(detail));
                     copy!(work, data, n);
                 }
             }
             Operation::Inverse => {
                 for i in (0..level).rev() {
                     let n = n >> i;
-                    self.inverse_step(data, n, &mut work);
+                    let (approx, detail) = data.split_at(n >> 1);
+                    self.inverse_step(approx, detail, n, &mut work);
                     copy!(work, data, n);
                 }
             }
@@ -57,35 +60,65 @@ where
     }
 
     #[inline(always)]
-    pub fn forward_step(&self, data: &[T], n: usize, work: &mut [T])
-    where
-        T: FloatCore,
-    {
+    pub fn forward_step(
+        &self,
+        data: &[T],
+        n: usize,
+        approx: Option<&mut [T]>,
+        detail: Option<&mut [T]>,
+    ) {
         let nm = L * n - self.offset;
         let nh = n >> 1;
-        for i in 0..nh {
-            let (mut h, mut g) = (T::zero(), T::zero());
-            let k = 2 * i + nm;
-            for j in 0..L {
-                let k = (k + j) % n;
-                h += self.dec_lo[j] * data[k];
-                g += self.dec_hi[j] * data[k];
+        match (approx, detail) {
+            (Some(approx), Some(detail)) => {
+                for (i, (h, g)) in approx
+                    .iter_mut()
+                    .zip(detail.iter_mut())
+                    .enumerate()
+                    .take(nh)
+                {
+                    h.set_zero();
+                    g.set_zero();
+                    let mut k = 2 * i + nm;
+                    for j in 0..L {
+                        k += j;
+                        let kn = k % n;
+                        *h += self.dec_lo[j] * data[kn];
+                        *g += self.dec_hi[j] * data[kn];
+                    }
+                }
             }
-            work[i] = h;
-            work[i + nh] = g;
+            (None, Some(detail)) => {
+                for (i, g) in detail.iter_mut().enumerate().take(nh) {
+                    g.set_zero();
+                    let mut k = 2 * i + nm;
+                    for j in 0..L {
+                        k += j;
+                        *g += self.dec_hi[j] * data[k % n];
+                    }
+                }
+            }
+            (Some(approx), None) => {
+                for (i, h) in approx.iter_mut().enumerate().take(nh) {
+                    h.set_zero();
+                    let mut k = 2 * i + nm;
+                    for j in 0..L {
+                        k += j;
+                        *h += self.dec_lo[j] * data[k % n];
+                    }
+                }
+            }
+            (None, None) => panic!("Pass destination buffer"),
         }
     }
 
     #[inline(always)]
-    pub fn inverse_step(&self, data: &[T], n: usize, work: &mut [T])
-    where
-        T: FloatCore,
-    {
+    pub fn inverse_step(&self, approx: &[T], detail: &[T], n: usize, work: &mut [T]) {
         zero!(work);
         let nm = L * n - self.offset;
         let nh = n >> 1;
         for i in 0..nh {
-            let (h, g) = (data[i], data[i + nh]);
+            let (h, g) = (approx[i], detail[i]);
             let k = 2 * i + nm;
             for j in 0..L {
                 let k = (k + j) % n;

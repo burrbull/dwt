@@ -7,8 +7,6 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![allow(clippy::new_ret_no_self)]
 
-use num_traits::{float::FloatCore, NumAssign};
-
 mod transform;
 
 pub mod wavelet;
@@ -33,7 +31,7 @@ pub fn transform<T, const L: usize>(
     wavelet: &wavelet::Wavelet<T, L>,
     level: usize,
 ) where
-    T: FloatCore + NumAssign,
+    T: num_traits::Zero + num_traits::NumAssign + Copy,
 {
     wavelet.transform(data, operation, level);
 }

@@ -1,10 +1,10 @@
 #![feature(test)]
 
-extern crate dwt;
 extern crate test;
 
+use core::hint::black_box;
 use dwt::{wavelet, Operation};
-use test::{black_box, Bencher};
+use test::Bencher;
 
 #[bench]
 fn forward_haar_0004(bencher: &mut Bencher) {
@@ -34,7 +34,7 @@ fn forward_haar_4096(bencher: &mut Bencher) {
 fn forward_haar(size: usize, bencher: &mut Bencher) {
     let mut data = vec![42.0; size];
     let operation = Operation::Forward;
-    let wavelet = wavelet::Haar::new();
+    let wavelet = wavelet::Db4::new();
     let level = (size as f64).log2() as usize;
     bencher.iter(|| black_box(wavelet.transform(&mut data, operation, level)));
 }
